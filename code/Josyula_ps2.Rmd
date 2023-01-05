@@ -1,0 +1,245 @@
+---
+title: "Problem Set 2"
+author: "Ananth Josyula"
+institute: "Vanderbilt University"
+date: "Due Date: 2022/09/18 @ 11:59PM CST"
+output:
+  html_document: default
+  mode: selfcontained
+  pdf_document: default
+---
+
+## Getting Set Up
+
+If you haven't already, create a folder for this course, and then a subfolder within for the second lecture `Topic4_DataWrangling`, and two additional subfolders within `code` and `data`.
+
+Open `RStudio` and create a new RMarkDown file (`.Rmd`) by going to `File -> New File -> R Markdown...`.
+Change the title to `"DS1000: Problem Set 2"` and the author to your full name. Save this file as `[LAST NAME]_ps2.Rmd` to your `code` folder.
+
+If you haven't already, download the `MI2020_ExitPoll.Rds` file from the course [github page](https://github.com/jbisbee1/DS1000-F2022/blob/master/Lectures/Topic4_DataWrangling/data/MI2020_ExitPoll.rds) and save it to your `data` folder.
+
+**NB:** Please upload a `.pdf` version of your homework to Brightspace! To do so, you can either choose the `knit` dropdown of "Knit to PDF", or you can open the standard `.html` output in your browser, then click print and choose "Print to PDF".
+
+
+## Question 1
+Require `tidyverse` and load the `MI2020_ExitPoll.Rds` data to `MI_raw`.
+```{r}
+# INSERT CODE HERE
+require(tidyverse)
+MI_raw<-readRDS("../data/MI2020_ExitPoll.rds")
+```
+
+## Question 2 [1 point]
+How many voters were from Wayne County?
+```{r}
+# INSERT CODE HERE
+MI_raw %>%
+  count(County == "WAYNE")
+```
+
+> - 102 voters were from Wayne County. 1129 voters were not from Wayne County.
+
+## Question 3 [1 points]
+Who did the majority of surveyed voters support in the 2020 presidential election?
+```{r}
+# INSERT CODE HERE
+MI_raw %>%
+  count(PRSMI20)
+```
+
+> - The majority of surveyed voters supported [Joe Biden, the Democrat] in the 2020 presidential election. 723 out of 1231 voters supported [Joe Biden, the Democrat].
+
+## Question 4 [2 points]
+What proportion of women supported Trump? What proportion of men supported Biden?
+```{r}
+# INSERT CODE HERE
+MI_raw %>%
+  count(SEX)
+MI_raw %>%
+  filter(SEX==2,PRSMI20==2) %>%
+  count(PRSMI20)
+MI_raw %>%
+  filter(SEX==1,PRSMI20==1) %>%
+  count(PRSMI20)
+```
+
+> - 212 out of 652 women voted for Trump. 304 out of 579 men voted for Biden. That is, about 1/(652/212) women voted for Trump and 1/(579/304) men voted for Biden.
+
+## Question 5 [1 point]
+Create a new object called `MI_clean` that contains only the following variables:
+  - AGE10
+  - SEX
+  - PARTYID
+  - EDUC18
+  - PRMSI20
+  - QLT20
+  - LGBT
+  - BRNAGAIN
+  - LATINOS
+  - QRACEAI
+  - WEIGHT
+```{r}
+# INSERT CODE HERE
+MI_clean <- MI_raw %>%
+  select(SEX,AGE10,PARTYID,EDUC18,PRSMI20,QLT20,LGBT,BRNAGAIN,QRACEAI,WEIGHT)
+```
+
+## Question 6 [1 point]
+Which of these variables have missing data recorded as `NA`?
+```{r}
+# INSERT CODE HERE
+#glimpse(MI_clean)
+MI_clean%>%
+count(AGE10)
+MI_clean%>%
+count(SEX)
+MI_clean%>%
+count(PARTYID)
+MI_clean%>%
+count(EDUC18)
+MI_clean%>%
+count(PRSMI20)
+MI_clean%>%
+count(QLT20)
+MI_clean%>%
+count(LGBT)
+MI_clean%>%
+count(BRNAGAIN)
+MI_clean%>%
+count(QRACEAI)
+MI_clean%>%
+count(WEIGHT)
+```
+
+> - Variables QLT20, LGBT, and BRNAGAIN all have missing data recorded as "NA".
+
+## Question 7 [1 point]
+Are there **unit non-response** data in the `AGE10` variable? If so, how are they recorded?
+
+```{r}
+# INSERT CODE HERE
+MI_clean %>%
+  count(AGE10)
+```
+
+> - There are unit non-response data in the "AGE10" variable called 99 [[DON'T READ] Refused]. They are recorded with a 99 dbl and [[DON'T READ] Refused] lbl.
+
+## Question 8 [1 point]
+What about in the PARTYID variable? How is unit non-response data recorded there?
+```{r}
+# INSERT CODE HERE
+MI_clean %>%
+  count(PARTYID)
+```
+
+> - There are unit non-response data in the "PARTYID" variable called 9 [[DON'T READ] Don’t know/refused]. They are recorded with a 9 dbl and [[DON'T READ] Don’t know/refused] lbl.
+
+## Question 9 [1 point]
+Let's create a new variable called `preschoice` that converts `PRSMI20` to a character. To do this, install the `sjlabelled` package and then create a new dataset called `lookup` that contains both the numeric value of the `PRSMI20` variable as well as the character label. Then merge this `lookup` dataframe to the `MI_clean` `tibble` with `left_join`.
+```{r}
+# INSERT CODE HERE
+#install.packages("sjlabelled")
+labels<-sjlabelled::get_labels(MI_clean$PRSMI20)
+values<-sjlabelled::get_values(MI_clean$PRSMI20)
+lookup<-data.frame(PRSMI20 = values, preschoice = labels)
+MI_clean<-MI_clean %>%
+  left_join(lookup, by = c("PRSMI20"),)
+```
+
+## Question 10 [1 point]
+Do the same for the `QLT20` variable, the `AGE10` variable, and the `LGBT` variable. For each variable, make the character version `Qlty` for `QLT20`, `Age` for `AGE10`, and `Lgbt_clean` for `LGBT`. EXTRA CREDIT: create a function to repeat this task easily.
+
+```{r}
+# INSERT CODE HERE
+relabFn<-function(data,column) {
+  labels<-sjlabelled::get_labels(data[[column]])
+  values<-sjlabelled::get_values(data[[column]])
+  return(data.frame(orig = values, lab = labels))
+}
+
+
+lookupQLT20<-relabFn(data = MI_clean, column = "QLT20") %>%
+  rename(QLT20 = orig, Qlty = lab)
+lookupAGE10<-relabFn(data = MI_clean, column = "AGE10") %>%
+  rename(AGE10 = orig, Age = lab)
+lookupLGBT<-relabFn(data = MI_clean, column = "LGBT") %>%
+  rename(LGBT = orig, Lgbt_clean = lab)
+
+
+MI_clean<-MI_clean %>%
+  left_join(lookupQLT20, by = c("QLT20"),) %>%
+  left_join(lookupAGE10, by = c("AGE10"),) %>%
+  left_join(lookupLGBT, by = c("LGBT"),)
+```
+
+## Question 11 [1 point]
+For each of these new variables, replace the unit non-response data label with `NA`.
+
+```{r}
+# INSERT CODE HERE
+MI_clean<-MI_clean %>%
+  mutate(Age = ifelse(AGE10 == 99, NA, AGE10)) %>% 
+  mutate(Qlt = ifelse(is.na(QLT20), NA, QLT20)) %>% 
+  mutate(Lgbt_clean = ifelse(is.na(LGBT), NA, LGBT))   %>% 
+  mutate(preschoice = ifelse(is.na(PRSMI20), NA, PRSMI20))
+```
+
+## Question 12 [2 points]
+What proportion of LGBT-identifying voters supported Trump?
+
+```{r}
+# INSERT CODE HERE
+MI_clean %>%
+  count(LGBT)
+MI_clean%>%
+  filter(Lgbt_clean == "Yes",preschoice == "Donald Trump, the Republican" ) %>%
+  count(Lgbt_clean)
+```
+
+> - Of the 23 voters who identify as LGBT, 0 supported Trump. That is, 0% of LGBT voters voted for Trump
+
+## Question 13 [2 points]
+Convert `AGE10` to a numeric variable and replace the unit non-response data code with `NA`. What is the average age category in the data? What age bracket does this define?
+
+```{r}
+# INSERT CODE HERE
+lookup <- relabFn(data=MI_clean, column = 'AGE10')
+lookup %>%
+  rename(AGE10 = orig, age_clean = lab)
+MI_clean <- MI_clean %>%
+  mutate (AGE10 = ifelse(AGE10 == 99, NA, AGE10))
+
+MI_clean %>%
+  summarise(avgAge = mean(AGE10, na.rm=T))
+```
+
+> - The average age category is 7.36 which corresponds to an age range of 50-64.
+
+## Question 14 [2 points]
+Plot the distribution of ages in the data. EXTRA CREDIT: color by the number of voters in each bracket that supported Trump, Biden, or someone else. Make sure to drop voters who didn't indicate who they voted for **AND** those who didn't indicate their age.
+
+```{r}
+# INSERT CODE HERE
+MI_clean <- MI_clean%>%
+  drop_na(preschoice) %>%
+  drop_na(Age)
+MI_clean %>%
+  ggplot (aes(x = Age, fill = factor(preschoice)))+
+  geom_bar (stat = 'count')
+```
+
+## Question 15 [3 points]
+In a two-way race (i.e., dropping those who voted for a candidate other than Biden or Trump), which age group most heavily favored Trump? Which most heavily favored Biden? Discuss some theories for why this might be the case. EXTRA CREDIT: plot this answer.
+
+```{r}
+# INSERT CODE HERE
+MI_clean <- MI_clean %>%
+  mutate(preschoice = ifelse(grepl('Another|Undecided|Will', preschoice), NA, preschoice)) %>%
+  drop_na(preschoice)
+
+MI_clean %>%
+  ggplot (aes(x= Age, fill= factor(preschoice)))+
+  geom_bar (stat = 'count')
+```
+
+> - In a two way race, voters age 50-59 most heavily favored Trump while voters age 65-74 most heavily favored Biden. A common retirement age is 65. Consequently, it is likely that those nearing retirement, yet still in the workforce, support Trump's tax cuts while those recently and already retired are incentivized by Biden's healthcare benefits.
